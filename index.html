@@ -3,1608 +3,261 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>VoxWave Radio — Tactical Multi-Device Walkie-Talkie</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <title>VOX-99 Tactical Radio</title>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     :root {
-      --lcd-bg: #8fa976;
-      --lcd-bg-glow: #a1be85;
-      --lcd-ink: #1a2414;
-      --lcd-ink-dim: rgba(26, 36, 20, 0.38);
-      --lcd-border: #3d4a32;
+      --lcd-bg: #8ba37e;
+      --lcd-text: #162111;
+      --accent-orange: #ff5722;
+      --accent-green: #00e676;
+      --accent-amber: #ffb300;
     }
-
-    body.amber-mode {
-      --lcd-bg: #d9822b;
-      --lcd-bg-glow: #ea943b;
-      --lcd-ink: #291303;
-      --lcd-ink-dim: rgba(41, 19, 3, 0.38);
-      --lcd-border: #5c310a;
-    }
-
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-    }
-
-    input, textarea {
-      user-select: text;
-    }
-
+    * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
     body {
-      font-family: 'Inter', sans-serif;
-      background-color: #0b0e13;
-      background-image:
-        radial-gradient(circle at 50% 20%, rgba(30, 41, 59, 0.55) 0%, rgba(11, 14, 19, 0.98) 75%),
-        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-      background-size: 100% 100%, 28px 28px, 28px 28px;
-      color: #e2e8f0;
-      min-height: 100dvh;
-      overflow-x: hidden;
+      margin: 0; min-height: 100vh; background: #12151b;
+      display: flex; justify-content: center; align-items: center;
+      font-family: monospace; color: #e2e8f0; padding: 10px;
     }
-
-    .font-lcd {
-      font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
+    .radio-unit {
+      width: 100%; max-width: 380px; background: #1f242d;
+      border-radius: 28px; padding: 16px; border: 2px solid #333a48;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
     }
-
-    .font-mono-tech {
-      font-family: 'JetBrains Mono', monospace;
+    .status-bar {
+      display: flex; justify-content: space-between; background: #111419;
+      padding: 6px 10px; border-radius: 14px; font-size: 11px; margin-bottom: 12px;
+      border: 1px solid #282d38;
     }
-
-    /* Rugged Walkie-Talkie Chassis */
-    .radio-chassis {
-      background: linear-gradient(145deg, #272b33 0%, #181b20 48%, #111317 100%);
-      box-shadow:
-        0 30px 60px -12px rgba(0, 0, 0, 0.85),
-        0 18px 36px -18px rgba(0, 0, 0, 0.9),
-        inset 0 2px 3px rgba(255, 255, 255, 0.14),
-        inset 0 -4px 8px rgba(0, 0, 0, 0.8),
-        0 0 0 2px #0d0f12,
-        0 0 0 4px #2a2f38;
-      position: relative;
+    .led { width: 8px; height: 8px; border-radius: 50%; background: #444; display: inline-block; margin-right: 4px; }
+    .led.active { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+    .led.tx { background: var(--accent-orange); box-shadow: 0 0 8px var(--accent-orange); }
+    
+    .lcd {
+      background: var(--lcd-bg); color: var(--lcd-text); border-radius: 8px;
+      padding: 10px; min-height: 180px; display: flex; flex-direction: column;
+      justify-content: space-between; margin-bottom: 12px; box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
     }
-
-    /* Ribbed Rubber Side Grips */
-    .side-grip-left, .side-grip-right {
-      background: repeating-linear-gradient(
-        to bottom,
-        #121418 0px,
-        #121418 5px,
-        #23272f 5px,
-        #23272f 9px
-      );
-      box-shadow: inset 0 2px 5px rgba(0,0,0,0.9);
+    .chat-log {
+      height: 95px; overflow-y: auto; background: rgba(0,0,0,0.06);
+      border-radius: 4px; padding: 4px; font-size: 12px; margin: 4px 0;
     }
-
-    /* Stubby Rubber Antenna */
-    .antenna-mast {
-      background: linear-gradient(90deg, #121417 0%, #2c313a 32%, #191c22 70%, #0d0e11 100%);
-      box-shadow:
-        -4px 8px 16px rgba(0,0,0,0.6),
-        inset 0 2px 3px rgba(255,255,255,0.15);
-      border-radius: 14px 14px 4px 4px;
+    .row { display: flex; gap: 6px; margin-bottom: 8px; }
+    input, button {
+      background: #111419; border: 1px solid #333a48; color: #fff;
+      padding: 8px; border-radius: 6px; font-size: 13px; outline: none; width: 100%;
     }
-
-    .antenna-rib {
-      background: linear-gradient(90deg, #0d0f12, #252932, #0d0f12);
-      height: 4px;
-      border-radius: 2px;
+    button { background: #2b3240; cursor: pointer; font-weight: bold; }
+    button.amber { border-color: var(--accent-amber); color: var(--accent-amber); }
+    
+    .ptt-btn {
+      width: 100%; height: 70px; border-radius: 16px;
+      background: linear-gradient(180deg, #ff5722, #c62828);
+      border: 2px solid #ff8a65; color: #fff; font-size: 16px; font-weight: 900;
+      cursor: pointer; box-shadow: 0 6px 0 #7f0000;
     }
-
-    /* Metallic Torx Screw */
-    .torx-screw {
-      width: 11px;
-      height: 11px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #64748b, #1e293b 70%, #0f172a 100%);
-      box-shadow: inset 0 1px 1px rgba(255,255,255,0.3), 0 1px 2px rgba(0,0,0,0.9);
-      position: relative;
-    }
-    .torx-screw::after {
-      content: '';
-      position: absolute;
-      inset: 3px;
-      background: #0f172a;
-      clip-path: polygon(50% 0%, 85% 20%, 100% 50%, 85% 80%, 50% 100%, 15% 80%, 0% 50%, 15% 20%);
-    }
-
-    /* Speaker Grille Perforations */
-    .speaker-grille {
-      background-color: #121418;
-      background-image: radial-gradient(#060709 2.1px, transparent 2.2px);
-      background-size: 8px 8px;
-      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.95), 0 1px 0 rgba(255, 255, 255, 0.08);
-    }
-
-    /* Retro Backlit LCD Display */
-    .lcd-bezel {
-      background: linear-gradient(180deg, #0e1014 0%, #1d2128 100%);
-      box-shadow:
-        inset 0 3px 8px rgba(0, 0, 0, 0.95),
-        0 1px 0 rgba(255, 255, 255, 0.12);
-    }
-
-    .lcd-screen {
-      background: radial-gradient(ellipse at center, var(--lcd-bg-glow) 0%, var(--lcd-bg) 88%);
-      color: var(--lcd-ink);
-      box-shadow:
-        inset 0 3px 12px rgba(0, 0, 0, 0.45),
-        inset 0 0 2px rgba(0, 0, 0, 0.7),
-        0 0 18px rgba(143, 169, 118, 0.18);
-      border: 2px solid var(--lcd-border);
-      position: relative;
-      transition: background 0.25s ease, color 0.25s ease;
-    }
-
-    body.amber-mode .lcd-screen {
-      box-shadow:
-        inset 0 3px 12px rgba(0, 0, 0, 0.45),
-        inset 0 0 2px rgba(0, 0, 0, 0.7),
-        0 0 20px rgba(217, 130, 43, 0.25);
-    }
-
-    /* Subtle LCD Pixel Grid & Scanline Texture */
-    .lcd-screen::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(0, 0, 0, 0.045) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 0, 0, 0.045) 1px, transparent 1px);
-      background-size: 3px 3px;
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    .lcd-log-scroll::-webkit-scrollbar {
-      width: 5px;
-    }
-    .lcd-log-scroll::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.08);
-    }
-    .lcd-log-scroll::-webkit-scrollbar-thumb {
-      background: var(--lcd-ink-dim);
-      border-radius: 3px;
-    }
-
-    /* Tactile Rubber & Metallic Hardware Buttons */
-    .hw-btn {
-      background: linear-gradient(180deg, #323741 0%, #20242b 100%);
-      border: 1px solid #101216;
-      box-shadow:
-        0 4px 0 #0c0e11,
-        0 6px 10px rgba(0, 0, 0, 0.65),
-        inset 0 1px 1px rgba(255, 255, 255, 0.18);
-      transition: transform 0.07s ease, box-shadow 0.07s ease, background 0.15s ease;
-    }
-    .hw-btn:active, .hw-btn.pressed {
-      transform: translateY(3px);
-      box-shadow:
-        0 1px 0 #0c0e11,
-        0 2px 4px rgba(0, 0, 0, 0.7),
-        inset 0 1px 3px rgba(0, 0, 0, 0.6);
-    }
-
-    /* Giant Tactile PTT Button */
-    .ptt-button {
-      background: linear-gradient(180deg, #ef4444 0%, #b91c1c 65%, #7f1d1d 100%);
-      border: 2px solid #450a0a;
-      box-shadow:
-        0 7px 0 #450a0a,
-        0 12px 24px rgba(0, 0, 0, 0.8),
-        inset 0 2px 3px rgba(255, 255, 255, 0.35);
-      transition: transform 0.06s ease, box-shadow 0.06s ease, filter 0.15s ease;
-    }
-    .ptt-button:active, .ptt-button.transmitting {
-      transform: translateY(6px);
-      background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
-      box-shadow:
-        0 1px 0 #450a0a,
-        0 4px 12px rgba(239, 68, 68, 0.55),
-        inset 0 3px 8px rgba(0, 0, 0, 0.65);
-    }
-
-    /* Side PTT Grip Trigger */
-    .side-ptt-trigger {
-      background: linear-gradient(90deg, #b91c1c 0%, #ef4444 50%, #991b1b 100%);
-      box-shadow: -3px 0 8px rgba(0, 0, 0, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.35);
-      transition: transform 0.06s ease;
-    }
-    .side-ptt-trigger:active, .side-ptt-trigger.transmitting {
-      transform: translateX(3px);
-      background: #dc2626;
-    }
-
-    /* Rotary Channel Knob */
-    .rotary-knob {
-      background: conic-gradient(from 0deg, #1e2229, #373e4a, #191c22, #373e4a, #1e2229);
-      box-shadow:
-        0 6px 12px rgba(0, 0, 0, 0.85),
-        inset 0 2px 3px rgba(255, 255, 255, 0.22),
-        0 0 0 3px #111317;
-      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    /* Glowing LEDs */
-    .led-off {
-      background: #272b33;
-      box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
-    }
-    .led-tx {
-      background: #ff2a2a;
-      box-shadow: 0 0 10px #ff2a2a, 0 0 20px rgba(255, 42, 42, 0.8), inset 0 1px 2px #fff;
-    }
-    .led-rx {
-      background: #22c55e;
-      box-shadow: 0 0 10px #22c55e, 0 0 20px rgba(34, 197, 94, 0.8), inset 0 1px 2px #fff;
-    }
-    .led-beacon {
-      background: #38bdf8;
-      box-shadow: 0 0 12px #38bdf8, 0 0 24px rgba(56, 189, 248, 0.75);
-    }
-
-    @keyframes pulse-ring {
-      0% { transform: scale(0.95); opacity: 0.9; }
-      70% { transform: scale(1.25); opacity: 0; }
-      100% { transform: scale(1.25); opacity: 0; }
-    }
-    .animate-pulse-ring {
-      animation: pulse-ring 1.4s cubic-bezier(0.24, 0, 0.38, 1) infinite;
-    }
+    .ptt-btn:active, .ptt-btn.active { transform: translateY(4px); box-shadow: 0 2px 0 #7f0000; background: #d32f2f; }
   </style>
 </head>
-<body class="flex flex-col items-center justify-center py-4 px-3 sm:py-8">
+<body>
 
-  <!-- Top Utility Bar: Share Link & Quick Help -->
-  <header class="w-full max-w-md mb-4 flex items-center justify-between gap-2 bg-slate-900/80 border border-slate-800 backdrop-blur-md px-3.5 py-2.5 rounded-2xl shadow-xl">
-    <div class="flex items-center gap-2.5 min-w-0">
-      <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" id="globalNetDot"></div>
-      <div class="truncate">
-        <div class="text-xs font-bold tracking-wider text-slate-200 uppercase">VoxWave Multi-Link</div>
-        <div class="text-[11px] text-slate-400 truncate" id="headerSyncStatus">Connecting to RF Relay...</div>
-      </div>
-    </div>
-
-    <div class="flex items-center gap-1.5 shrink-0">
-      <button id="copyShareBtn" type="button" class="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-xs px-3 py-2 rounded-xl shadow-md transition cursor-pointer" title="Copy direct frequency link to open on another phone or PC">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-        </svg>
-        <span id="copyShareLabel">Share Link</span>
-      </button>
-
-      <button id="toggleGuideBtn" type="button" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer" title="How to connect devices">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- Toast / Status Notification Banner (Replaces alert()) -->
-  <div id="toastBanner" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden items-center gap-2 bg-slate-900 border border-amber-500/60 text-amber-200 px-4 py-2.5 rounded-xl shadow-2xl text-xs font-medium max-w-[92vw]">
-    <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
-    <span id="toastText">Link copied!</span>
+<div class="radio-unit">
+  <div class="status-bar">
+    <div><span id="connLed" class="led"></span><span id="connText">DISCONNECTED</span></div>
+    <div><span id="txLed" class="led"></span>TX</div>
   </div>
 
-  <!-- Collapsible Quick Guide Modal / Drawer -->
-  <div id="guidePanel" class="hidden w-full max-w-md mb-4 bg-slate-900/95 border border-slate-700/80 rounded-2xl p-4 text-xs text-slate-300 shadow-2xl space-y-2.5">
-    <div class="flex items-center justify-between">
-      <span class="font-bold text-amber-400 uppercase tracking-wider">Multi-Device Radio Setup</span>
-      <button id="closeGuideBtn" type="button" class="text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-800">Close</button>
+  <div class="lcd">
+    <div style="font-weight:bold; font-size:11px; border-bottom:1px dashed #445533; padding-bottom:2px;">
+      CHANNEL: <span id="lblRoom">ALPHA-1</span> | PEERS: <span id="lblPeers">0</span>
     </div>
-    <p class="leading-relaxed text-slate-300">
-      1. Tap <strong class="text-white">Share Link</strong> above and open that exact URL on your second phone, tablet, or computer. Both devices automatically tune into the same channel.
-    </p>
-    <p class="leading-relaxed text-slate-300">
-      2. Hold the red <strong class="text-red-400">PTT (Push-To-Talk)</strong> button (or hold <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-600 text-[10px]">SPACE</kbd>) to speak live. Release to transmit your voice packet!
-    </p>
-    <p class="leading-relaxed text-slate-300">
-      3. Type in the <strong class="text-emerald-400">Radio Dispatch</strong> bar below the LCD to send instant text messages, or press <strong class="text-amber-300">CALL</strong> to ping everyone on your frequency.
-    </p>
+    <div class="chat-log" id="chatLog">
+      <div>[SYS] Ready. Enter channel and tap Connect.</div>
+    </div>
+    <div style="font-size:11px;" id="micStatus">MIC: READY</div>
   </div>
 
-  <!-- HANDHELD WALKIE-TALKIE TRANSCEIVER UNIT -->
-  <main class="w-full max-w-[410px] flex flex-col items-center relative">
-
-    <!-- Top Assembly: Stubby Antenna + Rotary Channel Knob -->
-    <div class="w-full px-8 flex items-end justify-between relative z-10 -mb-2">
-      <!-- Left: Stubby Rubber Antenna with Top LED Beacon -->
-      <div class="flex flex-col items-center">
-        <!-- Antenna Tip LED -->
-        <div class="relative flex items-center justify-center mb-1">
-          <div id="antennaLedRing" class="hidden absolute w-5 h-5 rounded-full bg-sky-400 animate-pulse-ring"></div>
-          <div id="antennaLed" class="w-3 h-3 rounded-full led-off border border-slate-900 transition-all duration-150"></div>
-        </div>
-        <!-- Antenna Shaft -->
-        <div class="antenna-mast w-8 sm:w-9 h-24 sm:h-28 flex flex-col justify-evenly px-1.5 py-3">
-          <div class="antenna-rib"></div>
-          <div class="antenna-rib"></div>
-          <div class="antenna-rib"></div>
-          <div class="antenna-rib"></div>
-          <div class="antenna-rib"></div>
-        </div>
-        <!-- Antenna Base Collar -->
-        <div class="w-12 h-3.5 bg-gradient-to-r from-zinc-900 via-zinc-700 to-zinc-900 rounded-t-md border-t border-zinc-600"></div>
-      </div>
-
-      <!-- Center Badge -->
-      <div class="mb-3 px-2.5 py-1 rounded-full bg-zinc-900/90 border border-zinc-700/80 text-[10px] font-mono-tech tracking-widest text-zinc-400 uppercase shadow">
-        UHF/VHF DIGITAL
-      </div>
-
-      <!-- Right: Rotary Channel Selector Knob -->
-      <div class="flex flex-col items-center mb-0.5">
-        <span class="text-[9px] font-bold tracking-widest text-slate-400 uppercase mb-1">TUNE / CH</span>
-        <button id="rotaryKnobBtn" type="button" aria-label="Rotate Channel Knob" class="rotary-knob w-14 h-14 rounded-full flex items-center justify-center relative cursor-pointer" title="Click to step channel">
-          <div id="rotaryIndicator" class="w-1.5 h-5 bg-amber-400 rounded-full -translate-y-3 shadow-[0_0_6px_rgba(251,191,36,0.9)]"></div>
-        </button>
-        <div class="w-14 h-2.5 bg-zinc-900 rounded-t-sm mt-0.5"></div>
-      </div>
-    </div>
-
-    <!-- Main Rugged Transceiver Body -->
-    <div class="radio-chassis w-full rounded-[34px] p-4 sm:p-5 relative">
-
-      <!-- Left Physical Side PTT Trigger (Protruding Edge) -->
-      <button id="sidePttBtn" type="button" aria-label="Side Push To Talk" class="side-ptt-trigger hidden sm:flex flex-col items-center justify-center w-3.5 h-32 rounded-l-xl absolute -left-3.5 top-44 border-y border-l border-red-950 cursor-pointer" title="Hold to Talk (PTT)">
-        <span class="text-[8px] font-black text-white/90 tracking-tighter [writing-mode:vertical-rl] rotate-180">PTT</span>
-      </button>
-
-      <!-- Ribbed Rubber Side Grips -->
-      <div class="side-grip-left w-2 h-44 rounded-r-md absolute left-0 bottom-20 opacity-85"></div>
-      <div class="side-grip-right w-2 h-44 rounded-l-md absolute right-0 bottom-20 opacity-85"></div>
-
-      <!-- Top Chassis Header: Brand Plate, Screws & TX/RX Status LEDs -->
-      <div class="flex items-center justify-between mb-3 px-1">
-        <div class="flex items-center gap-2">
-          <div class="torx-screw"></div>
-          <div>
-            <div class="flex items-center gap-1.5">
-              <span class="text-sm sm:text-base font-extrabold tracking-wider text-white">VOXWAVE</span>
-              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40 font-mono-tech">GT-9X</span>
-            </div>
-            <p class="text-[9px] tracking-[0.2em] text-zinc-400 uppercase font-semibold">Tactical Transceiver</p>
-          </div>
-        </div>
-
-        <!-- TX / RX Dual LED Indicators -->
-        <div class="flex items-center gap-3 bg-zinc-950/90 px-2.5 py-1.5 rounded-xl border border-zinc-800">
-          <div class="flex items-center gap-1.5">
-            <span id="txLed" class="w-2.5 h-2.5 rounded-full led-off transition-all"></span>
-            <span class="text-[10px] font-bold tracking-wider text-zinc-400">TX</span>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span id="rxLed" class="w-2.5 h-2.5 rounded-full led-off transition-all"></span>
-            <span class="text-[10px] font-bold tracking-wider text-zinc-400">RX</span>
-          </div>
-          <div class="torx-screw ml-0.5"></div>
-        </div>
-      </div>
-
-      <!-- Acoustic Speaker Grille Slits -->
-      <div class="speaker-grille w-full h-7 rounded-xl mb-3.5 border border-zinc-800/90 flex items-center justify-center">
-        <div class="px-2.5 py-0.5 rounded bg-zinc-950/85 text-[9px] font-mono-tech tracking-widest text-zinc-500 uppercase">
-          WATERPROOF • IP68 • DUAL-BAND
-        </div>
-      </div>
-
-      <!-- BACKLIT RETRO LCD DISPLAY BEZEL -->
-      <div class="lcd-bezel p-2.5 rounded-2xl mb-3.5 border border-zinc-800">
-        <div class="lcd-screen rounded-xl p-3 flex flex-col justify-between min-h-[268px] sm:min-h-[285px]">
-
-          <!-- LCD Top Status Row: Signal Bars, Mode, Battery & Operators -->
-          <div class="relative z-10 flex items-center justify-between border-b border-current/20 pb-1.5 text-[11px] font-lcd">
-            <div class="flex items-center gap-2">
-              <!-- Signal Strength Bars -->
-              <div class="flex items-end gap-[2px] h-3" title="RF Link Signal">
-                <span class="w-1 h-1 bg-current"></span>
-                <span class="w-1 h-1.5 bg-current"></span>
-                <span class="w-1 h-2 bg-current"></span>
-                <span id="sigBar4" class="w-1 h-3 bg-current"></span>
-              </div>
-              <span id="lcdModeBadge" class="font-bold px-1 border border-current/60 text-[10px]">STANDBY</span>
-              <span id="lcdMuteBadge" class="hidden font-bold px-1 bg-current text-[var(--lcd-bg)] text-[10px]">MUTE</span>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <span id="onlineCountLabel" class="font-bold">1 UNIT</span>
-              <!-- Battery Icon -->
-              <div class="flex items-center">
-                <div class="w-5 h-2.5 border border-current p-[1px] flex gap-[1px]">
-                  <div class="flex-1 bg-current"></div>
-                  <div class="flex-1 bg-current"></div>
-                  <div class="flex-1 bg-current"></div>
-                </div>
-                <div class="w-[2px] h-1.5 bg-current"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- LCD Primary Frequency & Channel Readout -->
-          <div class="relative z-10 my-2 flex items-center justify-between gap-2">
-            <div>
-              <div class="flex items-baseline gap-2">
-                <span id="lcdChannelCode" class="font-lcd text-3xl sm:text-4xl font-bold tracking-tight leading-none">CH-01</span>
-                <span id="lcdChannelName" class="font-lcd text-xs uppercase font-bold opacity-80">ALPHA NET</span>
-              </div>
-              <div id="lcdFreqDisplay" class="font-lcd text-sm sm:text-base font-bold tracking-wider mt-0.5">
-                462.5625 MHz <span class="text-[10px] opacity-75">FM</span>
-              </div>
-            </div>
-
-            <!-- Editable Callsign Badge -->
-            <button id="editCallsignBtn" type="button" class="text-right border border-current/45 hover:border-current px-2 py-1 rounded bg-black/5 transition cursor-pointer" title="Click to change your Callsign">
-              <div class="text-[9px] font-lcd uppercase opacity-75">CALLSIGN ✎</div>
-              <div id="lcdCallsign" class="font-lcd text-xs sm:text-sm font-bold tracking-wide">OP-402</div>
-            </button>
-          </div>
-
-          <!-- Real-Time Audio Spectrum / VU Meter Bar -->
-          <div class="relative z-10 mb-2">
-            <div class="flex items-center justify-between text-[9px] font-lcd opacity-75 mb-0.5">
-              <span id="vuLabel">SQUELCH CLOSED • READY</span>
-              <span id="micStatusTag">MIC: CHECKING</span>
-            </div>
-            <div id="vuMeterContainer" class="grid grid-cols-16 gap-[2px] h-2.5 p-[2px] border border-current/35 bg-black/5">
-              <!-- 16 VU Segments injected via JS -->
-            </div>
-          </div>
-
-          <!-- Scrollable Digital Radio Log (Incoming/Outgoing Voice & Text Dispatches) -->
-          <div id="radioLogFeed" class="relative z-10 lcd-log-scroll flex-1 max-h-[124px] min-h-[112px] overflow-y-auto border-t border-current/25 pt-1.5 space-y-1 font-lcd text-xs pr-1">
-            <div class="opacity-75">[SYS] Initializing VoxWave transceiver...</div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- INTEGRATED COMPACT TACTILE MESSAGE DISPATCH BAR -->
-      <form id="textDispatchForm" class="flex items-center gap-1.5 mb-3.5 bg-zinc-950/90 p-1.5 rounded-xl border border-zinc-800 shadow-inner">
-        <input
-          id="radioTextInput"
-          type="text"
-          maxlength="180"
-          autocomplete="off"
-          placeholder="Type radio dispatch message..."
-          class="flex-1 bg-transparent text-xs sm:text-sm text-emerald-300 placeholder-zinc-500 px-2.5 py-1.5 focus:outline-none font-mono-tech"
-        />
-        <button
-          type="submit"
-          class="hw-btn px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider text-amber-400 hover:text-amber-300 uppercase shrink-0 cursor-pointer"
-        >
-          SEND
-        </button>
-      </form>
-
-      <!-- HARDWARE FUNCTION BUTTONS ROW -->
-      <div class="grid grid-cols-5 gap-1.5 sm:gap-2 mb-4">
-        <!-- CH DOWN -->
-        <button id="chDownBtn" type="button" class="hw-btn py-2.5 rounded-xl flex flex-col items-center justify-center text-zinc-200 cursor-pointer" title="Previous Channel">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-          <span class="text-[9px] font-bold tracking-wider mt-0.5 text-zinc-400">CH -</span>
-        </button>
-
-        <!-- CH UP -->
-        <button id="chUpBtn" type="button" class="hw-btn py-2.5 rounded-xl flex flex-col items-center justify-center text-zinc-200 cursor-pointer" title="Next Channel">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
-          <span class="text-[9px] font-bold tracking-wider mt-0.5 text-zinc-400">CH +</span>
-        </button>
-
-        <!-- SCAN -->
-        <button id="scanBtn" type="button" class="hw-btn py-2.5 rounded-xl flex flex-col items-center justify-center text-zinc-200 cursor-pointer" title="Scan Channels">
-          <span id="scanDot" class="w-1.5 h-1.5 rounded-full bg-zinc-600 mb-1"></span>
-          <span class="text-[9px] font-bold tracking-wider text-zinc-300">SCAN</span>
-        </button>
-
-        <!-- CALL TONE -->
-        <button id="callToneBtn" type="button" class="hw-btn py-2.5 rounded-xl flex flex-col items-center justify-center text-amber-400 cursor-pointer" title="Transmit Call Alert Tone">
-          <svg class="w-3.5 h-3.5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-          <span class="text-[9px] font-bold tracking-wider">CALL</span>
-        </button>
-
-        <!-- LAMP / SQUELCH MUTE -->
-        <button id="lampBtn" type="button" class="hw-btn py-2.5 rounded-xl flex flex-col items-center justify-center text-emerald-400 cursor-pointer" title="Toggle LCD Backlight Color (Green/Amber)">
-          <svg class="w-3.5 h-3.5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-          <span class="text-[9px] font-bold tracking-wider">LAMP</span>
-        </button>
-      </div>
-
-      <!-- SECONDARY CONTROLS: Custom Frequency Code + Speaker Mute + Test Loopback -->
-      <div class="flex items-center justify-between gap-2 mb-4 px-1">
-        <button id="customFreqBtn" type="button" class="flex-1 bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700/80 rounded-xl px-2.5 py-2 text-[11px] font-mono-tech text-zinc-300 flex items-center justify-between transition cursor-pointer">
-          <span class="text-zinc-500">FREQ/ROOM:</span>
-          <span id="activeRoomCodeText" class="font-bold text-amber-400 truncate max-w-[110px]">CH-01</span>
-        </button>
-
-        <button id="muteRxBtn" type="button" class="bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700/80 rounded-xl px-3 py-2 text-[11px] font-mono-tech text-zinc-300 flex items-center gap-1.5 transition cursor-pointer" title="Mute/Unmute incoming speaker audio">
-          <span id="speakerIcon">🔊</span>
-          <span id="muteRxLabel">RX ON</span>
-        </button>
-      </div>
-
-      <!-- MAIN TACTILE PUSH-TO-TALK (PTT) BUTTON -->
-      <div class="px-1 pb-1">
-        <button
-          id="mainPttBtn"
-          type="button"
-          class="ptt-button w-full py-4 sm:py-5 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden cursor-pointer touch-none"
-        >
-          <div class="flex items-center gap-2.5">
-            <svg class="w-6 h-6 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 14a3 3 0 003-3V5a3 3 0 10-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.92V21h2v-3.08A7 7 0 0019 11h-2z"/>
-            </svg>
-            <span id="pttMainLabel" class="text-base sm:text-lg font-black tracking-widest text-white drop-shadow">
-              HOLD TO TALK (PTT)
-            </span>
-          </div>
-          <span id="pttSubLabel" class="text-[10px] font-mono-tech tracking-wider text-red-100/85 mt-0.5">
-            PRESS & HOLD OR HOLD [SPACEBAR]
-          </span>
-        </button>
-      </div>
-
-      <!-- Bottom Chassis Screws & Mic Pinhole -->
-      <div class="flex items-center justify-between mt-3 px-2">
-        <div class="torx-screw"></div>
-        <div class="flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-black border border-zinc-700"></span>
-          <span class="text-[9px] font-mono-tech text-zinc-500 tracking-widest">MIC</span>
-        </div>
-        <div class="torx-screw"></div>
-      </div>
-    </div>
-  </main>
-
-  <!-- Custom Modal for Callsign / Custom Frequency Room Input (No native prompt/alert) -->
-  <div id="customModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-xs p-5 shadow-2xl space-y-4">
-      <div>
-        <h3 id="modalTitle" class="text-sm font-bold text-white uppercase tracking-wider">Set Callsign</h3>
-        <p id="modalDesc" class="text-xs text-slate-400 mt-1">Enter your operator callsign visible to others on this frequency.</p>
-      </div>
-      <input
-        id="modalInput"
-        type="text"
-        maxlength="16"
-        class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl px-3 py-2.5 text-sm font-mono-tech text-white uppercase focus:outline-none"
-      />
-      <div class="flex items-center justify-end gap-2">
-        <button id="modalCancelBtn" type="button" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 cursor-pointer">
-          Cancel
-        </button>
-        <button id="modalConfirmBtn" type="button" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-xs font-bold text-slate-950 cursor-pointer">
-          Apply
-        </button>
-      </div>
-    </div>
+  <div class="row">
+    <input type="text" id="roomInput" value="ALPHA-1" placeholder="Room/Channel Name" />
+    <button class="amber" onclick="connectChannel()">CONNECT</button>
+  </div>
+  <div class="row">
+    <input type="text" id="msgInput" placeholder="Type message..." onkeydown="if(event.key==='Enter') sendText()" />
+    <button onclick="sendText()">SEND</button>
   </div>
 
-  <!-- Firebase & Application Logic -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      doc,
-      addDoc,
-      setDoc,
-      onSnapshot,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  <button class="ptt-btn" id="pttBtn">HOLD TO TALK (PTT)</button>
+</div>
 
-    // =========================================================================
-    // 1. PRESET RADIO CHANNELS & INITIAL STATE
-    // =========================================================================
-    const PRESET_CHANNELS = [
-      { code: "CH-01", freq: "462.5625", name: "ALPHA NET" },
-      { code: "CH-02", freq: "462.5875", name: "BRAVO OPS" },
-      { code: "CH-03", freq: "462.6125", name: "CHARLIE TAC" },
-      { code: "CH-04", freq: "462.6375", name: "DELTA SQUAD" },
-      { code: "CH-05", freq: "462.6625", name: "ECHO RECON" },
-      { code: "CH-06", freq: "462.6875", name: "FOXTROT BASE" },
-      { code: "CH-07", freq: "462.7125", name: "GUARDIAN 7" },
-      { code: "CH-08", freq: "467.5625", name: "OUTPOST 8" },
-      { code: "CH-09", freq: "467.5875", name: "EMERG / CALL" },
-      { code: "CH-10", freq: "467.6125", name: "LONG RANGE" }
-    ];
+<script>
+  let peer = null;
+  let connections = new Map();
+  let mediaCalls = new Map();
+  let localStream = null;
+  let isTransmitting = false;
+  const myId = 'U-' + Math.floor(1000 + Math.random() * 9000);
 
-    const state = {
-      channelIndex: 0,
-      customRoomId: null, // If user enters a custom frequency/room string
-      callsign: "OP-" + Math.floor(100 + Math.random() * 899),
-      userId: null,
-      isTransmitting: false,
-      isReceiving: false,
-      isMuted: false,
-      isScanning: false,
-      scanInterval: null,
-      micReady: false,
-      micStream: null,
-      mediaRecorder: null,
-      audioChunks: [],
-      recordStartTime: 0,
-      audioCtx: null,
-      analyser: null,
-      vuAnimFrame: null,
-      seenPacketIds: new Set(),
-      initialSnapshotLoaded: false,
-      unsubscribePackets: null,
-      unsubscribePresence: null,
-      presenceHeartbeat: null,
-      knobAngle: 0,
-      modalMode: null // 'callsign' | 'room'
-    };
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  function beep(freq, duration) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + duration);
+  }
 
-    // Parse URL `?channel=` parameter so shared links auto-tune to the exact channel
-    function readChannelFromURL() {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const chParam = params.get("channel");
-        if (!chParam) return;
-        const clean = chParam.trim().toUpperCase();
-        const foundIdx = PRESET_CHANNELS.findIndex(c => c.code === clean);
-        if (foundIdx !== -1) {
-          state.channelIndex = foundIdx;
-          state.customRoomId = null;
-        } else if (clean.length > 0) {
-          state.customRoomId = clean.replace(/[^A-Z0-9_-]/g, "").slice(0, 16) || "CH-01";
-        }
-      } catch (err) {
-        console.warn("URL parse fallback:", err);
+  function logMsg(sender, txt) {
+    const log = document.getElementById('chatLog');
+    log.innerHTML += `<div><b>[${sender}]</b> ${txt}</div>`;
+    log.scrollTop = log.scrollHeight;
+  }
+
+  async function getMic() {
+    if (localStream) return localStream;
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      localStream.getAudioTracks().forEach(t => t.enabled = false);
+      document.getElementById('micStatus').textContent = 'MIC: ARMED';
+      return localStream;
+    } catch (e) {
+      logMsg('ERR', 'Microphone blocked by browser!');
+      return null;
+    }
+  }
+
+  async function connectChannel() {
+    await getMic();
+    if (peer) { peer.destroy(); connections.clear(); }
+
+    const room = document.getElementById('roomInput').value.trim().toUpperCase() || 'ALPHA-1';
+    document.getElementById('lblRoom').textContent = room;
+    logMsg('SYS', 'Connecting to ' + room + '...');
+
+    // Try slots 0 to 5 to find an open node identity
+    trySlot(room, 0);
+  }
+
+  function trySlot(room, slot) {
+    const peerId = `vox99-${room}-${slot}`;
+    // Configured with public STUN servers for cross-network/firewall stability
+    peer = new Peer(peerId, {
+      config: { 'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
+    });
+
+    peer.on('open', () => {
+      document.getElementById('connLed').classList.add('active');
+      document.getElementById('connText').textContent = 'ONLINE';
+      logMsg('SYS', 'Connected as slot ' + slot);
+
+      // Connect to other potential slots in the same room
+      for (let i = 0; i < 5; i++) {
+        if (i !== slot) connectTo(`vox99-${room}-${i}`);
       }
-    }
+    });
 
-    function getActiveChannelKey() {
-      return state.customRoomId || PRESET_CHANNELS[state.channelIndex].code;
-    }
+    peer.on('connection', conn => setupData(conn));
+    peer.on('call', call => {
+      call.answer(localStream || undefined);
+      setupCall(call);
+    });
 
-    function updateBrowserURL() {
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set("channel", getActiveChannelKey());
-        window.history.replaceState({}, "", url.toString());
-      } catch (err) {
-        // Safe fallback inside restricted iframes
-      }
-    }
-
-    // =========================================================================
-    // 2. DOM REFERENCES & UI HELPERS
-    // =========================================================================
-    const el = {
-      headerSyncStatus: document.getElementById("headerSyncStatus"),
-      globalNetDot: document.getElementById("globalNetDot"),
-      copyShareBtn: document.getElementById("copyShareBtn"),
-      copyShareLabel: document.getElementById("copyShareLabel"),
-      toggleGuideBtn: document.getElementById("toggleGuideBtn"),
-      guidePanel: document.getElementById("guidePanel"),
-      closeGuideBtn: document.getElementById("closeGuideBtn"),
-      toastBanner: document.getElementById("toastBanner"),
-      toastText: document.getElementById("toastText"),
-      antennaLed: document.getElementById("antennaLed"),
-      antennaLedRing: document.getElementById("antennaLedRing"),
-      rotaryKnobBtn: document.getElementById("rotaryKnobBtn"),
-      rotaryIndicator: document.getElementById("rotaryIndicator"),
-      txLed: document.getElementById("txLed"),
-      rxLed: document.getElementById("rxLed"),
-      lcdModeBadge: document.getElementById("lcdModeBadge"),
-      lcdMuteBadge: document.getElementById("lcdMuteBadge"),
-      onlineCountLabel: document.getElementById("onlineCountLabel"),
-      lcdChannelCode: document.getElementById("lcdChannelCode"),
-      lcdChannelName: document.getElementById("lcdChannelName"),
-      lcdFreqDisplay: document.getElementById("lcdFreqDisplay"),
-      editCallsignBtn: document.getElementById("editCallsignBtn"),
-      lcdCallsign: document.getElementById("lcdCallsign"),
-      vuLabel: document.getElementById("vuLabel"),
-      micStatusTag: document.getElementById("micStatusTag"),
-      vuMeterContainer: document.getElementById("vuMeterContainer"),
-      radioLogFeed: document.getElementById("radioLogFeed"),
-      textDispatchForm: document.getElementById("textDispatchForm"),
-      radioTextInput: document.getElementById("radioTextInput"),
-      chDownBtn: document.getElementById("chDownBtn"),
-      chUpBtn: document.getElementById("chUpBtn"),
-      scanBtn: document.getElementById("scanBtn"),
-      scanDot: document.getElementById("scanDot"),
-      callToneBtn: document.getElementById("callToneBtn"),
-      lampBtn: document.getElementById("lampBtn"),
-      customFreqBtn: document.getElementById("customFreqBtn"),
-      activeRoomCodeText: document.getElementById("activeRoomCodeText"),
-      muteRxBtn: document.getElementById("muteRxBtn"),
-      speakerIcon: document.getElementById("speakerIcon"),
-      muteRxLabel: document.getElementById("muteRxLabel"),
-      mainPttBtn: document.getElementById("mainPttBtn"),
-      sidePttBtn: document.getElementById("sidePttBtn"),
-      pttMainLabel: document.getElementById("pttMainLabel"),
-      pttSubLabel: document.getElementById("pttSubLabel"),
-      customModal: document.getElementById("customModal"),
-      modalTitle: document.getElementById("modalTitle"),
-      modalDesc: document.getElementById("modalDesc"),
-      modalInput: document.getElementById("modalInput"),
-      modalCancelBtn: document.getElementById("modalCancelBtn"),
-      modalConfirmBtn: document.getElementById("modalConfirmBtn")
-    };
-
-    // Build 16-bar VU meter segments
-    const vuSegments = [];
-    for (let i = 0; i < 16; i++) {
-      const seg = document.createElement("div");
-      seg.className = "h-full bg-current opacity-15 transition-opacity duration-75";
-      el.vuMeterContainer.appendChild(seg);
-      vuSegments.push(seg);
-    }
-
-    function setVuLevel(normalizedLevel) {
-      // normalizedLevel: 0.0 to 1.0
-      const activeBars = Math.round(normalizedLevel * vuSegments.length);
-      vuSegments.forEach((seg, idx) => {
-        if (idx < activeBars) {
-          seg.classList.remove("opacity-15");
-          seg.classList.add("opacity-95");
-        } else {
-          seg.classList.remove("opacity-95");
-          seg.classList.add("opacity-15");
-        }
-      });
-    }
-
-    let toastTimer = null;
-    function showToast(message) {
-      el.toastText.textContent = message;
-      el.toastBanner.classList.remove("hidden");
-      el.toastBanner.classList.add("flex");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        el.toastBanner.classList.add("hidden");
-        el.toastBanner.classList.remove("flex");
-      }, 3200);
-    }
-
-    function appendRadioLog(sender, text, type = "msg", audioBase64 = null) {
-      const row = document.createElement("div");
-      const now = new Date();
-      const ts = now.toTimeString().slice(0, 5);
-
-      row.className = "leading-snug break-words flex items-start justify-between gap-1.5 border-b border-current/10 pb-0.5";
-
-      const textSpan = document.createElement("span");
-      if (type === "sys") {
-        textSpan.className = "opacity-80";
-        textSpan.textContent = `[${ts}] * ${text}`;
-      } else if (type === "voice") {
-        textSpan.className = "font-bold";
-        textSpan.textContent = `[${ts}] <${sender}> 🎙️ ${text}`;
-      } else if (type === "call") {
-        textSpan.className = "font-bold underline";
-        textSpan.textContent = `[${ts}] <${sender}> 🔔 CALL TONE ALERT!`;
+    peer.on('error', err => {
+      if (err.type === 'unavailable-id' && slot < 5) {
+        peer.destroy();
+        trySlot(room, slot + 1);
       } else {
-        textSpan.textContent = `[${ts}] <${sender}> ${text}`;
-      }
-      row.appendChild(textSpan);
-
-      // Replay button for incoming/outgoing voice packets
-      if (audioBase64) {
-        const replayBtn = document.createElement("button");
-        replayBtn.type = "button";
-        replayBtn.textContent = "▶";
-        replayBtn.title = "Replay voice transmission";
-        replayBtn.className = "px-1.5 py-0 border border-current/60 hover:bg-black/15 text-[10px] font-bold shrink-0 cursor-pointer";
-        replayBtn.addEventListener("click", () => {
-          playRadioVoiceBase64(audioBase64, sender, true);
-        });
-        row.appendChild(replayBtn);
-      }
-
-      el.radioLogFeed.appendChild(row);
-      // Keep last 45 entries
-      while (el.radioLogFeed.children.length > 45) {
-        el.radioLogFeed.removeChild(el.radioLogFeed.firstChild);
-      }
-      el.radioLogFeed.scrollTop = el.radioLogFeed.scrollHeight;
-    }
-
-    function updateLcdDisplay() {
-      const key = getActiveChannelKey();
-      el.lcdCallsign.textContent = state.callsign;
-      el.activeRoomCodeText.textContent = key;
-
-      if (state.customRoomId) {
-        el.lcdChannelCode.textContent = state.customRoomId.slice(0, 8);
-        el.lcdChannelName.textContent = "PRIVATE NET";
-        el.lcdFreqDisplay.innerHTML = `NET-ID: ${state.customRoomId} <span class="text-[10px] opacity-75">DIG</span>`;
-      } else {
-        const ch = PRESET_CHANNELS[state.channelIndex];
-        el.lcdChannelCode.textContent = ch.code;
-        el.lcdChannelName.textContent = ch.name;
-        el.lcdFreqDisplay.innerHTML = `${ch.freq} MHz <span class="text-[10px] opacity-75">FM</span>`;
-      }
-
-      // LEDs & Mode Badge
-      el.txLed.className = "w-2.5 h-2.5 rounded-full transition-all " + (state.isTransmitting ? "led-tx" : "led-off");
-      el.rxLed.className = "w-2.5 h-2.5 rounded-full transition-all " + (state.isReceiving ? "led-rx" : "led-off");
-
-      if (state.isTransmitting) {
-        el.lcdModeBadge.textContent = "TX • LIVE";
-        el.antennaLed.className = "w-3 h-3 rounded-full led-tx border border-slate-900";
-        el.antennaLedRing.classList.remove("hidden");
-      } else if (state.isReceiving) {
-        el.lcdModeBadge.textContent = "RX • AUDIO";
-        el.antennaLed.className = "w-3 h-3 rounded-full led-rx border border-slate-900";
-        el.antennaLedRing.classList.remove("hidden");
-      } else if (state.isScanning) {
-        el.lcdModeBadge.textContent = "SCANNING";
-        el.antennaLed.className = "w-3 h-3 rounded-full led-beacon border border-slate-900";
-        el.antennaLedRing.classList.add("hidden");
-      } else {
-        el.lcdModeBadge.textContent = "STANDBY";
-        el.antennaLed.className = "w-3 h-3 rounded-full led-off border border-slate-900";
-        el.antennaLedRing.classList.add("hidden");
-      }
-
-      if (state.isMuted) {
-        el.lcdMuteBadge.classList.remove("hidden");
-        el.speakerIcon.textContent = "🔇";
-        el.muteRxLabel.textContent = "MUTED";
-      } else {
-        el.lcdMuteBadge.classList.add("hidden");
-        el.speakerIcon.textContent = "🔊";
-        el.muteRxLabel.textContent = "RX ON";
-      }
-    }
-
-    // =========================================================================
-    // 3. WEB AUDIO API: SYNTHESIZED RADIO EFFECTS & BANDPASS VOICE PLAYBACK
-    // =========================================================================
-    function ensureAudioContext() {
-      if (!state.audioCtx) {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        state.audioCtx = new AudioContextClass();
-      }
-      if (state.audioCtx.state === "suspended") {
-        state.audioCtx.resume();
-      }
-      return state.audioCtx;
-    }
-
-    // Classic Walkie-Talkie PTT Key-Up Chirp
-    function playPttStartChirp() {
-      try {
-        const ctx = ensureAudioContext();
-        const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(1150, now);
-        osc.frequency.exponentialRampToValueAtTime(1650, now + 0.065);
-        gain.gain.setValueAtTime(0.14, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.085);
-      } catch (e) {}
-    }
-
-    // Classic Roger Beep + Squelch Tail Static on PTT Release
-    function playRogerBeepAndSquelch() {
-      try {
-        const ctx = ensureAudioContext();
-        const now = ctx.currentTime;
-
-        // Dual-tone Roger Beep
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(1480, now);
-        osc.frequency.setValueAtTime(1180, now + 0.06);
-        gain.gain.setValueAtTime(0.14, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.15);
-
-        // Short White-Noise Squelch Tail
-        const bufferSize = Math.floor(ctx.sampleRate * 0.11);
-        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.45));
-        }
-        const whiteNoise = ctx.createBufferSource();
-        whiteNoise.buffer = noiseBuffer;
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = "bandpass";
-        filter.frequency.value = 1800;
-
-        const nGain = ctx.createGain();
-        nGain.gain.setValueAtTime(0.09, now + 0.08);
-        nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
-
-        whiteNoise.connect(filter);
-        filter.connect(nGain);
-        nGain.connect(ctx.destination);
-        whiteNoise.start(now + 0.08);
-      } catch (e) {}
-    }
-
-    // Two-Tone Motorola/Kenwood Style Radio Call Alert Chime
-    function playRadioCallChime() {
-      if (state.isMuted) return;
-      try {
-        const ctx = ensureAudioContext();
-        const now = ctx.currentTime;
-        const notes = [987.77, 1318.51, 987.77, 1318.51]; // B5 - E6 - B5 - E6
-        notes.forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = "square";
-          osc.frequency.setValueAtTime(freq, now + idx * 0.11);
-          gain.gain.setValueAtTime(0.09, now + idx * 0.11);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.11 + 0.1);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(now + idx * 0.11);
-          osc.stop(now + idx * 0.11 + 0.105);
-        });
-      } catch (e) {}
-    }
-
-    // Tactile Click for Channel Dial / Hardware Buttons
-    function playDialTick() {
-      try {
-        const ctx = ensureAudioContext();
-        const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(620, now);
-        osc.frequency.exponentialRampToValueAtTime(220, now + 0.025);
-        gain.gain.setValueAtTime(0.12, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.035);
-      } catch (e) {}
-    }
-
-    // Decode Base64 Audio & Play Through Authentic Walkie-Talkie Bandpass Filter
-    async function playRadioVoiceBase64(base64Data, senderCallsign, forcePlay = false) {
-      if (state.isMuted && !forcePlay) return;
-      try {
-        const ctx = ensureAudioContext();
-        const binaryString = atob(base64Data);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
-        const source = ctx.createBufferSource();
-        source.buffer = audioBuffer;
-
-        // Radio Bandpass Filter (350Hz - 3200Hz) + Slight Compression for authentic transceiver voice
-        const highpass = ctx.createBiquadFilter();
-        highpass.type = "highpass";
-        highpass.frequency.value = 340;
-
-        const lowpass = ctx.createBiquadFilter();
-        lowpass.type = "lowpass";
-        lowpass.frequency.value = 3300;
-
-        const gainNode = ctx.createGain();
-        gainNode.gain.value = 1.35;
-
-        // Connect Analyser for incoming RX VU meter animation
-        const rxAnalyser = ctx.createAnalyser();
-        rxAnalyser.fftSize = 64;
-
-        source.connect(highpass);
-        highpass.connect(lowpass);
-        lowpass.connect(gainNode);
-        gainNode.connect(rxAnalyser);
-        rxAnalyser.connect(ctx.destination);
-
-        state.isReceiving = true;
-        el.vuLabel.textContent = `RX AUDIO: ${senderCallsign}`;
-        updateLcdDisplay();
-        playPttStartChirp();
-
-        const dataArray = new Uint8Array(rxAnalyser.frequencyBinCount);
-        let rxAnimId = null;
-        const updateRxVu = () => {
-          if (!state.isReceiving) return;
-          rxAnalyser.getByteFrequencyData(dataArray);
-          let sum = 0;
-          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-          const avg = sum / dataArray.length / 255;
-          setVuLevel(Math.min(1, avg * 2.2));
-          rxAnimId = requestAnimationFrame(updateRxVu);
-        };
-        updateRxVu();
-
-        source.onended = () => {
-          state.isReceiving = false;
-          if (rxAnimId) cancelAnimationFrame(rxAnimId);
-          setVuLevel(0);
-          el.vuLabel.textContent = "SQUELCH CLOSED • READY";
-          updateLcdDisplay();
-          playRogerBeepAndSquelch();
-        };
-
-        source.start(0);
-      } catch (err) {
-        console.warn("Audio decode fallback:", err);
-        state.isReceiving = false;
-        updateLcdDisplay();
-      }
-    }
-
-    // =========================================================================
-    // 4. MICROPHONE CAPTURE & PUSH-TO-TALK (PTT) ENGINE
-    // =========================================================================
-    async function initMicrophone() {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        state.micReady = false;
-        el.micStatusTag.textContent = "MIC: N/A (SIM)";
-        return false;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          }
-        });
-        state.micStream = stream;
-        state.micReady = true;
-        el.micStatusTag.textContent = "MIC: ARMED";
-
-        // Attach live analyser for TX VU meter
-        const ctx = ensureAudioContext();
-        const micSource = ctx.createMediaStreamSource(stream);
-        state.analyser = ctx.createAnalyser();
-        state.analyser.fftSize = 64;
-        micSource.connect(state.analyser);
-        return true;
-      } catch (err) {
-        state.micReady = false;
-        el.micStatusTag.textContent = "MIC: DENIED";
-        return false;
-      }
-    }
-
-    function startTxVuAnimation() {
-      const dataArray = state.analyser ? new Uint8Array(state.analyser.frequencyBinCount) : null;
-      const tick = () => {
-        if (!state.isTransmitting) return;
-        if (state.analyser && dataArray) {
-          state.analyser.getByteFrequencyData(dataArray);
-          let sum = 0;
-          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-          const avg = sum / dataArray.length / 255;
-          setVuLevel(Math.min(1, avg * 2.5));
-        } else {
-          // Simulated voice modulation bars if mic permission was blocked
-          setVuLevel(0.35 + Math.random() * 0.55);
-        }
-        state.vuAnimFrame = requestAnimationFrame(tick);
-      };
-      tick();
-    }
-
-    async function beginPushToTalk() {
-      if (state.isTransmitting) return;
-      if (state.isScanning) toggleChannelScan();
-
-      ensureAudioContext();
-
-      // Request mic permission on first PTT press if not yet armed
-      if (!state.micReady && !state.micStream) {
-        const granted = await initMicrophone();
-        if (!granted) {
-          showToast("Mic blocked — running in Simulated Voice Beacon mode.");
-        }
-      }
-
-      state.isTransmitting = true;
-      state.recordStartTime = Date.now();
-      state.audioChunks = [];
-
-      el.mainPttBtn.classList.add("transmitting");
-      el.sidePttBtn.classList.add("transmitting");
-      el.pttMainLabel.textContent = "TRANSMITTING...";
-      el.pttSubLabel.textContent = "RELEASE TO SEND VOICE PACKET";
-      el.vuLabel.textContent = "TX CARRIER ACTIVE • SPEAK NOW";
-
-      playPttStartChirp();
-      updateLcdDisplay();
-      startTxVuAnimation();
-
-      if (state.micReady && state.micStream) {
-        try {
-          const preferredMime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-            ? "audio/webm;codecs=opus"
-            : MediaRecorder.isTypeSupported("audio/mp4")
-            ? "audio/mp4"
-            : "";
-
-          state.mediaRecorder = preferredMime
-            ? new MediaRecorder(state.micStream, { mimeType: preferredMime, audioBitsPerSecond: 24000 })
-            : new MediaRecorder(state.micStream, { audioBitsPerSecond: 24000 });
-
-          state.mediaRecorder.ondataavailable = (e) => {
-            if (e.data && e.data.size > 0) {
-              state.audioChunks.push(e.data);
-            }
-          };
-
-          state.mediaRecorder.onstop = async () => {
-            const durationSec = Math.max(0.2, (Date.now() - state.recordStartTime) / 1000);
-            if (state.audioChunks.length === 0 || durationSec < 0.25) {
-              return;
-            }
-            const audioBlob = new Blob(state.audioChunks, { type: state.mediaRecorder.mimeType || "audio/webm" });
-            // Enforce < 750KB Firestore document safety limit (~15-20s of compressed Opus voice)
-            if (audioBlob.size > 750000) {
-              showToast("Transmission too long (max 15s per burst).");
-              return;
-            }
-            const reader = new FileReader();
-            reader.onloadend = async () => {
-              const dataUrl = reader.result;
-              const base64Audio = dataUrl.split(",")[1];
-              await transmitRadioPacket({
-                type: "voice",
-                text: `Voice Burst (${durationSec.toFixed(1)}s)`,
-                audioData: base64Audio
-              });
-            };
-            reader.readAsDataURL(audioBlob);
-          };
-
-          state.mediaRecorder.start(150);
-        } catch (err) {
-          console.warn("MediaRecorder fallback:", err);
-        }
-      }
-    }
-
-    async function endPushToTalk() {
-      if (!state.isTransmitting) return;
-      const durationSec = (Date.now() - state.recordStartTime) / 1000;
-
-      state.isTransmitting = false;
-      if (state.vuAnimFrame) cancelAnimationFrame(state.vuAnimFrame);
-      setVuLevel(0);
-
-      el.mainPttBtn.classList.remove("transmitting");
-      el.sidePttBtn.classList.remove("transmitting");
-      el.pttMainLabel.textContent = "HOLD TO TALK (PTT)";
-      el.pttSubLabel.textContent = "PRESS & HOLD OR HOLD [SPACEBAR]";
-      el.vuLabel.textContent = "SQUELCH CLOSED • READY";
-
-      playRogerBeepAndSquelch();
-      updateLcdDisplay();
-
-      if (state.mediaRecorder && state.mediaRecorder.state !== "inactive") {
-        try {
-          state.mediaRecorder.stop();
-        } catch (e) {}
-      } else if (!state.micReady && durationSec >= 0.3) {
-        // Fallback simulated voice beacon when microphone isn't available
-        await transmitRadioPacket({
-          type: "voice",
-          text: `Voice Carrier Burst (${durationSec.toFixed(1)}s - Mic Sim)`,
-          audioData: null
-        });
-      }
-    }
-
-    // =========================================================================
-    // 5. FIREBASE REAL-TIME MULTI-DEVICE SYNC (FIRESTORE + ANONYMOUS AUTH)
-    // =========================================================================
-    let db = null;
-    let auth = null;
-    const appId = typeof __app_id !== "undefined" ? __app_id : "voxwave-radio-default";
-
-    async function initFirebaseRadio() {
-      try {
-        if (typeof __firebase_config === "undefined") {
-          throw new Error("Offline standalone mode");
-        }
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
-
-        // RULE 3: Authenticate BEFORE any Firestore operations
-        if (typeof __initial_auth_token !== "undefined" && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-
-        state.userId = auth.currentUser?.uid || crypto.randomUUID();
-        el.headerSyncStatus.textContent = `RF Cloud Active • ${getActiveChannelKey()}`;
-        el.globalNetDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0";
-
-        subscribeToChannel(getActiveChannelKey());
-        startPresenceHeartbeat();
-      } catch (err) {
-        console.warn("Running in local standalone radio mode:", err);
-        state.userId = crypto.randomUUID();
-        el.headerSyncStatus.textContent = "Local Transceiver Mode";
-        el.globalNetDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0";
-        appendRadioLog("SYS", `Tuned to ${getActiveChannelKey()}. Ready.`, "sys");
-      }
-    }
-
-    // Transmit a Voice, Text, or Call Alert packet to the active channel
-    async function transmitRadioPacket({ type, text, audioData = null }) {
-      const channelKey = getActiveChannelKey();
-      const clientPacketId = `${state.userId}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-      state.seenPacketIds.add(clientPacketId);
-
-      // Immediately log local transmission on sender's screen
-      appendRadioLog(state.callsign, text, type, audioData);
-
-      if (!db || !auth?.currentUser) return;
-
-      try {
-        // RULE 1: Strict public data collection path
-        const packetsCol = collection(db, "artifacts", appId, "public", "data", "voxwave_packets");
-        await addDoc(packetsCol, {
-          packetId: clientPacketId,
-          channel: channelKey,
-          senderId: state.userId,
-          callsign: state.callsign,
-          type: type, // 'text' | 'voice' | 'call'
-          text: text,
-          audioData: audioData,
-          createdAtMs: Date.now(),
-          serverTs: serverTimestamp()
-        });
-      } catch (err) {
-        console.error("Failed to transmit packet:", err);
-        showToast("RF Packet dropped — check internet connection.");
-      }
-    }
-
-    // Subscribe to live incoming transmissions & active units on the tuned channel
-    function subscribeToChannel(channelKey) {
-      if (state.unsubscribePackets) state.unsubscribePackets();
-      if (state.unsubscribePresence) state.unsubscribePresence();
-
-      state.initialSnapshotLoaded = false;
-      el.radioLogFeed.innerHTML = "";
-      appendRadioLog("SYS", `Tuned ${channelKey} • Listening...`, "sys");
-      el.headerSyncStatus.textContent = `RF Cloud Active • ${channelKey}`;
-
-      if (!db || !auth?.currentUser) return;
-
-      // RULE 2: Simple collection query without orderBy/where compound indexes; filter/sort in JS
-      const packetsCol = collection(db, "artifacts", appId, "public", "data", "voxwave_packets");
-      const joinTimestamp = Date.now() - 10 * 60 * 1000; // Show recent 10 mins of channel chatter
-
-      state.unsubscribePackets = onSnapshot(
-        packetsCol,
-        (snapshot) => {
-          const docs = [];
-          snapshot.forEach((docSnap) => {
-            docs.push({ id: docSnap.id, ...docSnap.data() });
-          });
-
-          // Sort chronologically in memory
-          docs.sort((a, b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
-
-          for (const pkt of docs) {
-            if (pkt.channel !== channelKey) continue;
-            const uniqueKey = pkt.packetId || pkt.id;
-            if (state.seenPacketIds.has(uniqueKey)) continue;
-            state.seenPacketIds.add(uniqueKey);
-
-            // Skip ancient messages older than 10 mins
-            if ((pkt.createdAtMs || 0) < joinTimestamp) continue;
-
-            const isHistoricalOnInitialLoad = !state.initialSnapshotLoaded;
-            appendRadioLog(pkt.callsign || "UNKNOWN", pkt.text || "", pkt.type || "text", pkt.audioData || null);
-
-            // Auto-play live incoming voice or call tones from OTHER devices
-            if (!isHistoricalOnInitialLoad && pkt.senderId !== state.userId) {
-              if (pkt.type === "voice" && pkt.audioData) {
-                playRadioVoiceBase64(pkt.audioData, pkt.callsign || "REMOTE");
-              } else if (pkt.type === "call") {
-                playRadioCallChime();
-                showToast(`Incoming CALL Alert from ${pkt.callsign}!`);
-              } else if (pkt.type === "text") {
-                playDialTick();
-              }
-            }
-          }
-
-          state.initialSnapshotLoaded = true;
-        },
-        (error) => {
-          console.error("Radio listener error:", error);
-        }
-      );
-
-      // Presence Listener: Count active units tuned to this channel in the last 45 seconds
-      const presenceCol = collection(db, "artifacts", appId, "public", "data", "voxwave_presence");
-      state.unsubscribePresence = onSnapshot(
-        presenceCol,
-        (snapshot) => {
-          const now = Date.now();
-          let activeUnits = 0;
-          snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            if (data.channel === channelKey && now - (data.lastSeenMs || 0) < 45000) {
-              activeUnits++;
-            }
-          });
-          const count = Math.max(1, activeUnits);
-          el.onlineCountLabel.textContent = `${count} ${count === 1 ? "UNIT" : "UNITS"}`;
-        },
-        (error) => {
-          console.warn("Presence listener warning:", error);
-        }
-      );
-
-      sendPresencePing();
-    }
-
-    async function sendPresencePing() {
-      if (!db || !auth?.currentUser || !state.userId) return;
-      try {
-        const presenceDoc = doc(db, "artifacts", appId, "public", "data", "voxwave_presence", state.userId);
-        await setDoc(presenceDoc, {
-          userId: state.userId,
-          callsign: state.callsign,
-          channel: getActiveChannelKey(),
-          lastSeenMs: Date.now()
-        });
-      } catch (err) {}
-    }
-
-    function startPresenceHeartbeat() {
-      if (state.presenceHeartbeat) clearInterval(state.presenceHeartbeat);
-      state.presenceHeartbeat = setInterval(sendPresencePing, 15000);
-    }
-
-    // =========================================================================
-    // 6. CHANNEL TUNING, SCANNING, CALL TONE & HARDWARE INTERACTIONS
-    // =========================================================================
-    function switchChannel(newIndex) {
-      state.customRoomId = null;
-      state.channelIndex = (newIndex + PRESET_CHANNELS.length) % PRESET_CHANNELS.length;
-      state.knobAngle += 36;
-      el.rotaryIndicator.style.transform = `rotate(${state.knobAngle}deg) translateY(-12px)`;
-      playDialTick();
-      updateBrowserURL();
-      updateLcdDisplay();
-      subscribeToChannel(getActiveChannelKey());
-    }
-
-    function setCustomRoom(roomCode) {
-      const sanitized = roomCode.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 14);
-      if (!sanitized) return;
-      state.customRoomId = sanitized;
-      playDialTick();
-      updateBrowserURL();
-      updateLcdDisplay();
-      subscribeToChannel(getActiveChannelKey());
-      showToast(`Tuned to Private Frequency: ${sanitized}`);
-    }
-
-    function toggleChannelScan() {
-      state.isScanning = !state.isScanning;
-      if (state.isScanning) {
-        el.scanDot.className = "w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping mb-1";
-        showToast("Scanning preset frequencies...");
-        state.scanInterval = setInterval(() => {
-          switchChannel(state.channelIndex + 1);
-        }, 2200);
-      } else {
-        el.scanDot.className = "w-1.5 h-1.5 rounded-full bg-zinc-600 mb-1";
-        clearInterval(state.scanInterval);
-        state.scanInterval = null;
-      }
-      updateLcdDisplay();
-    }
-
-    // Copy Share Link using execCommand fallback for seamless iframe compatibility
-    function copyFrequencyShareLink() {
-      updateBrowserURL();
-      const shareUrl = window.location.href;
-      const tempInput = document.createElement("textarea");
-      tempInput.value = shareUrl;
-      tempInput.style.position = "fixed";
-      tempInput.style.opacity = "0";
-      document.body.appendChild(tempInput);
-      tempInput.select();
-      try {
-        document.execCommand("copy");
-        el.copyShareLabel.textContent = "Copied!";
-        showToast(`Link copied! Open on any phone/PC to join ${getActiveChannelKey()}`);
-        setTimeout(() => {
-          el.copyShareLabel.textContent = "Share Link";
-        }, 2500);
-      } catch (err) {
-        showToast("Copy failed — copy the URL from your browser address bar.");
-      }
-      document.body.removeChild(tempInput);
-    }
-
-    // Modal Handler for Callsign & Custom Frequency Room
-    function openCustomModal(mode) {
-      state.modalMode = mode;
-      if (mode === "callsign") {
-        el.modalTitle.textContent = "Operator Callsign";
-        el.modalDesc.textContent = "Set your radio handle displayed on all connected walkie-talkies.";
-        el.modalInput.value = state.callsign;
-        el.modalInput.placeholder = "e.g. VIPER-1";
-      } else {
-        el.modalTitle.textContent = "Custom Frequency / Room ID";
-        el.modalDesc.textContent = "Enter any custom frequency code (e.g. SQUAD-99) to create a private channel.";
-        el.modalInput.value = getActiveChannelKey();
-        el.modalInput.placeholder = "e.g. ALPHA-99";
-      }
-      el.customModal.classList.remove("hidden");
-      el.customModal.classList.add("flex");
-      setTimeout(() => el.modalInput.focus(), 50);
-    }
-
-    function closeCustomModal() {
-      el.customModal.classList.add("hidden");
-      el.customModal.classList.remove("flex");
-      state.modalMode = null;
-    }
-
-    el.modalCancelBtn.addEventListener("click", closeCustomModal);
-    el.modalConfirmBtn.addEventListener("click", () => {
-      const val = el.modalInput.value.trim().toUpperCase();
-      if (state.modalMode === "callsign" && val) {
-        state.callsign = val.replace(/[^A-Z0-9_-]/g, "").slice(0, 12) || state.callsign;
-        updateLcdDisplay();
-        sendPresencePing();
-        showToast(`Callsign updated to ${state.callsign}`);
-      } else if (state.modalMode === "room" && val) {
-        setCustomRoom(val);
-      }
-      closeCustomModal();
-    });
-
-    el.modalInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        el.modalConfirmBtn.click();
-      } else if (e.key === "Escape") {
-        closeCustomModal();
+        logMsg('NET', 'Connection error. Check network.');
       }
     });
+  }
 
-    // =========================================================================
-    // 7. EVENT LISTENERS (MOUSE, TOUCH, KEYBOARD & FORM DISPATCH)
-    // =========================================================================
-    el.copyShareBtn.addEventListener("click", copyFrequencyShareLink);
+  function connectTo(targetId) {
+    if (!peer || connections.has(targetId)) return;
+    const conn = peer.connect(targetId, { reliable: true });
+    setupData(conn);
+    if (localStream) {
+      const call = peer.call(targetId, localStream);
+      if (call) setupCall(call);
+    }
+  }
 
-    el.toggleGuideBtn.addEventListener("click", () => {
-      el.guidePanel.classList.toggle("hidden");
+  function setupData(conn) {
+    conn.on('open', () => {
+      connections.set(conn.peer, conn);
+      document.getElementById('lblPeers').textContent = connections.size;
+      logMsg('SYS', 'Peer linked!');
     });
-    el.closeGuideBtn.addEventListener("click", () => {
-      el.guidePanel.classList.add("hidden");
-    });
-
-    el.chUpBtn.addEventListener("click", () => {
-      if (state.isScanning) toggleChannelScan();
-      switchChannel(state.channelIndex + 1);
-    });
-
-    el.chDownBtn.addEventListener("click", () => {
-      if (state.isScanning) toggleChannelScan();
-      switchChannel(state.channelIndex - 1);
-    });
-
-    el.rotaryKnobBtn.addEventListener("click", () => {
-      if (state.isScanning) toggleChannelScan();
-      switchChannel(state.channelIndex + 1);
-    });
-
-    el.scanBtn.addEventListener("click", toggleChannelScan);
-
-    el.callToneBtn.addEventListener("click", async () => {
-      playRadioCallChime();
-      await transmitRadioPacket({
-        type: "call",
-        text: "CALL TONE ALERT"
-      });
-    });
-
-    el.lampBtn.addEventListener("click", () => {
-      playDialTick();
-      document.body.classList.toggle("amber-mode");
-      const isAmber = document.body.classList.contains("amber-mode");
-      showToast(`LCD Backlight: ${isAmber ? "Tactical Amber" : "Classic Phosphor Green"}`);
-    });
-
-    el.muteRxBtn.addEventListener("click", () => {
-      playDialTick();
-      state.isMuted = !state.isMuted;
-      updateLcdDisplay();
-    });
-
-    el.editCallsignBtn.addEventListener("click", () => openCustomModal("callsign"));
-    el.customFreqBtn.addEventListener("click", () => openCustomModal("room"));
-
-    // Text Radio Dispatch Form
-    el.textDispatchForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const msg = el.radioTextInput.value.trim();
-      if (!msg) return;
-      el.radioTextInput.value = "";
-      playDialTick();
-      await transmitRadioPacket({
-        type: "text",
-        text: msg
-      });
-    });
-
-    // PTT Button Events (Pointer events handle both Mouse and Touch seamlessly)
-    const bindPttElement = (btnEl) => {
-      btnEl.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        beginPushToTalk();
-      });
-      btnEl.addEventListener("pointerup", (e) => {
-        e.preventDefault();
-        endPushToTalk();
-      });
-      btnEl.addEventListener("pointerleave", () => {
-        if (state.isTransmitting) endPushToTalk();
-      });
-      btnEl.addEventListener("pointercancel", () => {
-        if (state.isTransmitting) endPushToTalk();
-      });
-      btnEl.addEventListener("contextmenu", (e) => e.preventDefault());
-    };
-
-    bindPttElement(el.mainPttBtn);
-    bindPttElement(el.sidePttBtn);
-
-    // Hold Spacebar for PTT (when not typing in an input field)
-    window.addEventListener("keydown", (e) => {
-      if (e.code === "Space" && document.activeElement.tagName !== "INPUT") {
-        e.preventDefault();
-        if (!e.repeat) beginPushToTalk();
+    conn.on('data', data => {
+      if (data.type === 'text') {
+        logMsg(data.sender, data.text);
+        beep(1000, 0.08);
+      } else if (data.type === 'ptt') {
+        document.getElementById('txLed').classList.toggle('tx', data.active);
+        if (!data.active) beep(1500, 0.1);
       }
     });
-
-    window.addEventListener("keyup", (e) => {
-      if (e.code === "Space" && document.activeElement.tagName !== "INPUT") {
-        e.preventDefault();
-        endPushToTalk();
-      }
+    conn.on('close', () => {
+      connections.delete(conn.peer);
+      document.getElementById('lblPeers').textContent = connections.size;
     });
+  }
 
-    // =========================================================================
-    // 8. BOOTSTRAP APPLICATION
-    // =========================================================================
-    readChannelFromURL();
-    updateBrowserURL();
-    updateLcdDisplay();
-    initMicrophone();
-    initFirebaseRadio();
-  </script>
+  function setupCall(call) {
+    mediaCalls.set(call.peer, call);
+    call.on('stream', stream => {
+      let audio = document.getElementById('aud-' + call.peer);
+      if (!audio) {
+        audio = document.createElement('audio');
+        audio.id = 'aud-' + call.peer;
+        audio.autoplay = true;
+        document.body.appendChild(audio);
+      }
+      audio.srcObject = stream;
+    });
+  }
+
+  function broadcast(packet) {
+    connections.forEach(c => { if (c.open) c.send(packet); });
+  }
+
+  function sendText() {
+    const input = document.getElementById('msgInput');
+    const text = input.value.trim();
+    if (!text) return;
+    logMsg(myId, text);
+    broadcast({ type: 'text', sender: myId, text });
+    input.value = '';
+  }
+
+  async function startTX() {
+    if (isTransmitting) return;
+    await getMic();
+    isTransmitting = true;
+    document.getElementById('pttBtn').classList.add('active');
+    document.getElementById('txLed').classList.add('tx');
+    beep(1200, 0.05);
+    if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = true);
+    broadcast({ type: 'ptt', sender: myId, active: true });
+  }
+
+  function stopTX() {
+    if (!isTransmitting) return;
+    isTransmitting = false;
+    document.getElementById('pttBtn').classList.remove('active');
+    document.getElementById('txLed').classList.remove('tx');
+    if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = false);
+    beep(1500, 0.1);
+    broadcast({ type: 'ptt', sender: myId, active: false });
+  }
+
+  const ptt = document.getElementById('pttBtn');
+  ptt.addEventListener('mousedown', startTX);
+  ptt.addEventListener('touchstart', e => { e.preventDefault(); startTX(); });
+  window.addEventListener('mouseup', stopTX);
+  window.addEventListener('touchend', stopTX);
+</script>
 </body>
 </html>
